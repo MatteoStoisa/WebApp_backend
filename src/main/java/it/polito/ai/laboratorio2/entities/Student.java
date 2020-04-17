@@ -16,7 +16,7 @@ public class Student {
     private String firstName;
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name="student_course", joinColumns = @JoinColumn(name="student_id"), inverseJoinColumns = @JoinColumn(name="course_name") )
-    List<Course> courses = new ArrayList<>();
+    private List<Course> courses = new ArrayList<>();
 
     public void addCourse(Course course) {
         if(!this.courses.contains(course))

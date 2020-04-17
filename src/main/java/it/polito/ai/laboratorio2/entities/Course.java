@@ -18,7 +18,7 @@ public class Course {
     private int max;
     private boolean enabled;
     @ManyToMany(mappedBy="courses")
-    List<Student> students = new ArrayList<>();
+    private List<Student> students = new ArrayList<>();
 
     public void addStudent(Student student) {
         if(!this.students.contains(student))
