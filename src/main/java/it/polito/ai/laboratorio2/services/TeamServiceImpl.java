@@ -4,10 +4,12 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.dtos.TeamDTO;
 import it.polito.ai.laboratorio2.entities.Course;
 import it.polito.ai.laboratorio2.entities.Student;
 import it.polito.ai.laboratorio2.repositories.CourseRepository;
 import it.polito.ai.laboratorio2.repositories.StudentRepository;
+import it.polito.ai.laboratorio2.repositories.TeamRepository;
 import it.polito.ai.laboratorio2.services.exceptions.CourseNotFoundException;
 import it.polito.ai.laboratorio2.services.exceptions.StudentNotFoundException;
 import org.modelmapper.ModelMapper;
@@ -28,6 +30,8 @@ public class TeamServiceImpl implements TeamService {
     CourseRepository courseRepository;
     @Autowired
     StudentRepository studentRepository;
+    @Autowired
+    TeamRepository teamRepository;
 
     @Autowired
     ModelMapper modelMapper;
@@ -156,7 +160,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public List<Boolean> addAndEroll(Reader r, String courseName) {
+    public List<Boolean> addAndEnroll(Reader r, String courseName) {
         /*
         .csv format required:
             id,firstName,name
@@ -176,5 +180,33 @@ public class TeamServiceImpl implements TeamService {
             booleans.add(false);
         }
         return booleans;
+    }
+
+    @Override
+    public List<CourseDTO> getCourses(String studentId) {
+        if(!studentRepository.findById(studentId).isPresent())
+            throw new StudentNotFoundException();
+        return studentRepository.getOne(studentId).getCourses()
+                .stream()
+                .map(c -> modelMapper.map(c, CourseDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TeamDTO> getTeamsForStudent(String studentId) {
+        //TODO: check studentId validity
+        return studentRepository.getOne(studentId).getTeams()
+                .stream()
+                .map(m -> modelMapper.map(m, TeamDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<StudentDTO> getMembers(Long teamId) {
+        //TODO: check teamId validity
+        return teamRepository.getOne(String.valueOf(teamId)).getMembers()
+                .stream()
+                .map(t -> modelMapper.map(t, StudentDTO.class))
+                .collect(Collectors.toList());
     }
 }

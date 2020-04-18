@@ -5,6 +5,7 @@ import lombok.Data;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,14 +18,30 @@ public class Course {
     private int min;
     private int max;
     private boolean enabled;
-    @ManyToMany(mappedBy="courses")
+    @ManyToMany(mappedBy = "courses")
     private List<Student> students = new ArrayList<>();
+    @OneToMany(mappedBy = "course")
+    private List<Team> teams = new ArrayList<>();
 
     public void addStudent(Student student) {
         if(!this.students.contains(student))
             this.students.add(student);
         if(!student.getCourses().contains(this))
             student.addCourse(this);
+    }
+
+    public void addTeam(Team team) {
+        if(!this.teams.contains(team))
+            this.teams.add(team);
+        if(!team.getCourse().equals(this))
+            team.selectCourse(this);
+    }
+
+    public void removeTeam(Team team) {
+        if(this.teams.contains(team))
+            this.teams.remove(team);
+        if(team.getCourse().equals(this))
+            team.unselectCourse(this);
     }
 
 
