@@ -34,7 +34,7 @@ public class TeamServiceImpl implements TeamService {
 
 
     @Override
-    public boolean addCourse(CourseDTO course) {
+    public Boolean addCourse(CourseDTO course) {
         if(courseRepository.findAll().contains(modelMapper.map(course, Course.class)))
             return false;
         courseRepository.save(modelMapper.map(course, Course.class));
@@ -59,7 +59,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public boolean addStudent(StudentDTO student) {
+    public Boolean addStudent(StudentDTO student) {
         if(studentRepository.findAll().contains(modelMapper.map(student, Student.class)))
             return false;
         studentRepository.save(modelMapper.map(student, Student.class));
@@ -94,11 +94,15 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public boolean addStudentToCourse(String studentId, String courseName) throws StudentNotFoundException, CourseNotFoundException{
-        if(!courseRepository.findById(courseName).isPresent())
-            throw new CourseNotFoundException();
-        if(!studentRepository.findById(studentId).isPresent())
-            throw new StudentNotFoundException();
+    public Boolean addStudentToCourse(String studentId, String courseName) throws StudentNotFoundException, CourseNotFoundException{
+        try {
+            if(!courseRepository.findById(courseName).isPresent())
+                throw new CourseNotFoundException();
+            if(!studentRepository.findById(studentId).isPresent())
+                throw new StudentNotFoundException();
+        } catch (StudentNotFoundException | CourseNotFoundException e) {
+            return false;
+        }
         courseRepository.getOne(courseName).addStudent(studentRepository.getOne(studentId));
         return true;
     }
@@ -121,11 +125,27 @@ public class TeamServiceImpl implements TeamService {
     public List<Boolean> addAll(List<StudentDTO> students) {
         List<Boolean> booleans = new ArrayList<Boolean>();
         for(StudentDTO studentDTO : students) {
+            if(studentRepository.findAll().contains(modelMapper.map(studentDTO, Student.class)))
+                booleans.add(false);
+            else {
+                addStudent(studentDTO);
+                booleans.add(true);
+            }
+        }
+        return booleans;
+    }
+
+    @Override
+    public List<Boolean> enrollAll(List<String> studentIds, String courseName) {
+        if(!courseRepository.findById(courseName).isPresent())
+            throw new CourseNotFoundException(); //TODO: have to catch here??
+        List<Boolean> booleans = new ArrayList<Boolean>();
+        for(String studentId : studentIds) {
             try {
-                if(studentRepository.findAll().contains(modelMapper.map(studentDTO, Student.class)))
+                if(!studentRepository.findById(studentId).isPresent())
                     throw new StudentNotFoundException();
                 else {
-                    studentRepository.save(modelMapper.map(studentDTO, Student.class));
+                    courseRepository.getOne(courseName).addStudent(studentRepository.getOne(studentId));
                     booleans.add(true);
                 }
             } catch (StudentNotFoundException e) {
@@ -136,37 +156,25 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public List<Boolean> enrollAll(List<String> studentIds, String courseName) {
-        List<Boolean> booleans = new ArrayList<Boolean>();
-        if(!courseRepository.findById(courseName).isPresent())
-            throw new CourseNotFoundException();
-        else {
-            for(String studentId : studentIds) {
-                try {
-                    if(!studentRepository.findById(studentId).isPresent())
-                        throw new StudentNotFoundException();
-                    else {
-                        courseRepository.getOne(courseName).addStudent(studentRepository.getOne(studentId));
-                        booleans.add(true);
-                    }
-                } catch (StudentNotFoundException e) {
-                    booleans.add(false);
-                }
-            }
-        }
-        return booleans;
-    }
-
-    @Override
     public List<Boolean> addAndEroll(Reader r, String courseName) {
-        CsvToBean<Student> csvToBean = new CsvToBeanBuilder(r)
-                .withType(Student.class)
+        /*
+        .csv format required:
+            id,firstName,name
+            s265542,Matteo,Stoisa
+            [...]
+         */
+        CsvToBean<StudentDTO> csvToBean = new CsvToBeanBuilder(r)
+                .withType(StudentDTO.class)
                 .withIgnoreLeadingWhiteSpace(true)
                 .build();
+        List<StudentDTO> students = csvToBean.parse();
 
-        List<Student> students = csvToBean.parse();
-        for(Student student : students)
-            addStudent(modelMapper.map(student, StudentDTO.class));
-        return enrollAll(students.stream().map(s -> s.getName()).collect(Collectors.toList()), courseName);
+        List<Boolean> booleans = addAll(students);
+        try {
+            booleans.addAll(enrollAll(students.stream().map(StudentDTO::getId).collect(Collectors.toList()), courseName));
+        } catch (CourseNotFoundException e) {
+            booleans.add(false);
+        }
+        return booleans;
     }
 }
