@@ -1,5 +1,6 @@
 package it.polito.ai.laboratorio2.entities;
 
+import it.polito.ai.laboratorio2.services.exceptions.TeamInvalidMembersNumberException;
 import lombok.Data;
 
 import javax.persistence.*;

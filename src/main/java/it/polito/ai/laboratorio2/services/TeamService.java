@@ -3,6 +3,7 @@ package it.polito.ai.laboratorio2.services;
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
 import it.polito.ai.laboratorio2.dtos.TeamDTO;
+import it.polito.ai.laboratorio2.entities.Student;
 
 import java.io.Reader;
 import java.util.List;
@@ -28,4 +29,10 @@ public interface TeamService {
 
     List<TeamDTO> getTeamsForStudent(String studentId);
     List<StudentDTO>getMembers(Long teamId);
+
+    TeamDTO proposeTeam(String courseId, String name, List<String> memberIds);
+
+    List<TeamDTO> getTeamForCourse(String courseName);
+
+    List<StudentDTO> getStudentsInTeams(String courseName);
 }

@@ -7,11 +7,11 @@ import it.polito.ai.laboratorio2.dtos.StudentDTO;
 import it.polito.ai.laboratorio2.dtos.TeamDTO;
 import it.polito.ai.laboratorio2.entities.Course;
 import it.polito.ai.laboratorio2.entities.Student;
+import it.polito.ai.laboratorio2.entities.Team;
 import it.polito.ai.laboratorio2.repositories.CourseRepository;
 import it.polito.ai.laboratorio2.repositories.StudentRepository;
 import it.polito.ai.laboratorio2.repositories.TeamRepository;
-import it.polito.ai.laboratorio2.services.exceptions.CourseNotFoundException;
-import it.polito.ai.laboratorio2.services.exceptions.StudentNotFoundException;
+import it.polito.ai.laboratorio2.services.exceptions.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -194,7 +194,8 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public List<TeamDTO> getTeamsForStudent(String studentId) {
-        //TODO: check studentId validity
+        if(!studentRepository.findById(studentId).isPresent())
+            throw new StudentNotFoundException();
         return studentRepository.getOne(studentId).getTeams()
                 .stream()
                 .map(m -> modelMapper.map(m, TeamDTO.class))
@@ -203,10 +204,51 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public List<StudentDTO> getMembers(Long teamId) {
-        //TODO: check teamId validity
+        if(!teamRepository.findById(String.valueOf(teamId)).isPresent())
+            throw new TeamNotFoundException();
         return teamRepository.getOne(String.valueOf(teamId)).getMembers()
                 .stream()
                 .map(t -> modelMapper.map(t, StudentDTO.class))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public TeamDTO proposeTeam(String courseId, String name, List<String> memberIds) {
+        if(!courseRepository.findById(courseId).isPresent())
+            throw new CourseNotFoundException();
+        if(!courseRepository.getOne(courseId).isEnabled())
+            throw new CourseNotEnabledException();
+        if(memberIds.size() < courseRepository.getOne(courseId).getMin() || memberIds.size() > courseRepository.getOne(courseId).getMax())
+            throw new TeamInvalidMembersNumberException();
+        for(String memberId : memberIds) {
+            if(!studentRepository.findById(memberId).isPresent())
+                throw new StudentNotFoundException();
+        }
+        Team team = new Team();
+        team.setName(name);
+        team.setStatus(memberIds.size());
+        team.selectCourse(courseRepository.getOne(courseId));
+        for (String memberId : memberIds) {
+            team.addMember(studentRepository.getOne(memberId));
+        }
+        teamRepository.save(team);
+        return modelMapper.map(team, TeamDTO.class);
+    }
+
+    @Override
+    public List<TeamDTO> getTeamForCourse(String courseName) {
+        if(!courseRepository.findById(courseName).isPresent())
+            throw new CourseNotFoundException();
+        return courseRepository.getOne(courseName).getTeams()
+                .stream()
+                .map(t -> modelMapper.map(t, TeamDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<StudentDTO> getStudentsInTeams(String courseName) {
+        if(!courseRepository.findById(courseName).isPresent())
+            throw new CourseNotFoundException();
+        return getStudentsInTeams(courseName);
     }
 }
