@@ -1,6 +1,5 @@
 package it.polito.ai.laboratorio2.entities;
 
-import it.polito.ai.laboratorio2.services.exceptions.TeamInvalidMembersNumberException;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -23,18 +22,23 @@ public class Team {
     @JoinTable(name = "team_student", joinColumns = @JoinColumn(name = "team_id"), inverseJoinColumns = @JoinColumn(name = "student_id") )
     private List<Student> members = new ArrayList<>();
 
-    public void selectCourse(Course course) {
-        if(!this.course.equals(course))
-            this.course = course;
-        if(!course.getTeams().contains(this))
-            course.addTeam(this);
-    }
-
-    public void unselectCourse(Course course) {
-        if(this.course.equals(course))
+    public void setCourse(Course course) { //puo' essere passato null per rimuovere il corso ma nessuno lo passa mai
+        if(course == null && this.course != null) {
+            if(!this.course.getTeams().contains(this))
+                this.course.removeTeam(this);
             this.course = null;
-        if(course.getTeams().contains(this))
-            course.removeTeam(this);
+        }
+        else {
+            if(this.course == null) {
+                this.course = course;
+            }
+            else {
+                if(!this.course.equals(course))
+                    this.course = course;
+            }
+            if(!course.getTeams().contains(this))
+                course.addTeam(this);
+        }
     }
 
     public void addMember(Student student) {
@@ -45,10 +49,14 @@ public class Team {
     }
 
     public void removeMember(Student student) {
-        if(this.members.contains(student))
-            this.members.remove(student);
+        this.members.remove(student);
         if(student.getTeams().contains(this))
             student.removeTeam(this);
+    }
+
+    @Override
+    public String toString() {
+        return "(Team: "+this.name+" "+this.course.getName()+")";
     }
 
 }

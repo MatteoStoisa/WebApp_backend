@@ -11,7 +11,14 @@ import it.polito.ai.laboratorio2.entities.Team;
 import it.polito.ai.laboratorio2.repositories.CourseRepository;
 import it.polito.ai.laboratorio2.repositories.StudentRepository;
 import it.polito.ai.laboratorio2.repositories.TeamRepository;
-import it.polito.ai.laboratorio2.services.exceptions.*;
+import it.polito.ai.laboratorio2.services.exceptions.courseException.CourseNotEnabledException;
+import it.polito.ai.laboratorio2.services.exceptions.courseException.CourseNotFoundException;
+import it.polito.ai.laboratorio2.services.exceptions.studentException.StudentAlreadyInTeamException;
+import it.polito.ai.laboratorio2.services.exceptions.studentException.StudentNotFoundException;
+import it.polito.ai.laboratorio2.services.exceptions.studentException.StudentNotInCourseException;
+import it.polito.ai.laboratorio2.services.exceptions.teamException.TeamMinMaxException;
+import it.polito.ai.laboratorio2.services.exceptions.teamException.TeamNotFoundException;
+import lombok.extern.java.Log;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Log(topic = "TeamServiceImpl")
 public class TeamServiceImpl implements TeamService {
     @Autowired
     CourseRepository courseRepository;
@@ -39,7 +47,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Boolean addCourse(CourseDTO course) {
-        if(courseRepository.findAll().contains(modelMapper.map(course, Course.class)))
+        if(course.getName() == null || course.getName().equals("") || course.getMin() < 0 || course.getMax() < course.getMin())
             return false;
         courseRepository.save(modelMapper.map(course, Course.class));
         return true;
@@ -64,7 +72,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Boolean addStudent(StudentDTO student) {
-        if(studentRepository.findAll().contains(modelMapper.map(student, Student.class)))
+        if(student.getId() == null || student.getId().equals(""))
             return false;
         studentRepository.save(modelMapper.map(student, Student.class));
         return true;
@@ -74,7 +82,7 @@ public class TeamServiceImpl implements TeamService {
     public Optional<StudentDTO> getStudent(String studentId) {
         return studentRepository.findAll()
                 .stream()
-                .filter(s -> s.getName().equals(studentId))
+                .filter(s -> s.getId().equals(studentId))
                 .findFirst()
                 .map(s -> modelMapper.map(s, StudentDTO.class));
     }
@@ -107,6 +115,8 @@ public class TeamServiceImpl implements TeamService {
         } catch (StudentNotFoundException | CourseNotFoundException e) {
             return false;
         }
+        if(!courseRepository.getOne(courseName).isEnabled())
+            return false;
         courseRepository.getOne(courseName).addStudent(studentRepository.getOne(studentId));
         return true;
     }
@@ -129,12 +139,7 @@ public class TeamServiceImpl implements TeamService {
     public List<Boolean> addAll(List<StudentDTO> students) {
         List<Boolean> booleans = new ArrayList<Boolean>();
         for(StudentDTO studentDTO : students) {
-            if(studentRepository.findAll().contains(modelMapper.map(studentDTO, Student.class)))
-                booleans.add(false);
-            else {
-                addStudent(studentDTO);
-                booleans.add(true);
-            }
+            booleans.add(addStudent(studentDTO));
         }
         return booleans;
     }
@@ -142,19 +147,10 @@ public class TeamServiceImpl implements TeamService {
     @Override
     public List<Boolean> enrollAll(List<String> studentIds, String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
-            throw new CourseNotFoundException(); //TODO: have to catch here??
+            throw new CourseNotFoundException();
         List<Boolean> booleans = new ArrayList<Boolean>();
         for(String studentId : studentIds) {
-            try {
-                if(!studentRepository.findById(studentId).isPresent())
-                    throw new StudentNotFoundException();
-                else {
-                    courseRepository.getOne(courseName).addStudent(studentRepository.getOne(studentId));
-                    booleans.add(true);
-                }
-            } catch (StudentNotFoundException e) {
-                booleans.add(false);
-            }
+            booleans.add(addStudentToCourse(studentId, courseName));
         }
         return booleans;
     }
@@ -204,9 +200,9 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public List<StudentDTO> getMembers(Long teamId) {
-        if(!teamRepository.findById(String.valueOf(teamId)).isPresent())
+        if(!teamRepository.findById(teamId).isPresent())
             throw new TeamNotFoundException();
-        return teamRepository.getOne(String.valueOf(teamId)).getMembers()
+        return teamRepository.getOne(teamId).getMembers()
                 .stream()
                 .map(t -> modelMapper.map(t, StudentDTO.class))
                 .collect(Collectors.toList());
@@ -214,23 +210,32 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamDTO proposeTeam(String courseId, String name, List<String> memberIds) {
+        log.info("entered function");
         if(!courseRepository.findById(courseId).isPresent())
             throw new CourseNotFoundException();
         if(!courseRepository.getOne(courseId).isEnabled())
             throw new CourseNotEnabledException();
         if(memberIds.size() < courseRepository.getOne(courseId).getMin() || memberIds.size() > courseRepository.getOne(courseId).getMax())
-            throw new TeamInvalidMembersNumberException();
+            throw new TeamMinMaxException();
         for(String memberId : memberIds) {
             if(!studentRepository.findById(memberId).isPresent())
                 throw new StudentNotFoundException();
+            if(!studentRepository.getOne(memberId).getCourses().contains(courseRepository.getOne(courseId)))
+                throw new StudentNotInCourseException();
+            List<Team> teams = studentRepository.getOne(memberId).getTeams();
+            for(Team team : teams) {
+                if(team.getCourse().equals(courseRepository.getOne(courseId)))
+                    throw new StudentAlreadyInTeamException();
+            }
         }
         Team team = new Team();
         team.setName(name);
-        team.setStatus(memberIds.size());
-        team.selectCourse(courseRepository.getOne(courseId));
+        team.setStatus(0);
+        team.setCourse(courseRepository.getOne(courseId));
         for (String memberId : memberIds) {
             team.addMember(studentRepository.getOne(memberId));
         }
+        System.out.println(team.toString());
         teamRepository.save(team);
         return modelMapper.map(team, TeamDTO.class);
     }
@@ -249,6 +254,19 @@ public class TeamServiceImpl implements TeamService {
     public List<StudentDTO> getStudentsInTeams(String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
-        return getStudentsInTeams(courseName);
+        return courseRepository.getStudentsInTeams(courseName)
+                .stream()
+                .map(s -> modelMapper.map(s, StudentDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<StudentDTO> getAvailableStudents(String courseName) {
+        if(!courseRepository.findById(courseName).isPresent())
+            throw new CourseNotFoundException();
+        return courseRepository.getStudentsNotInTeams(courseName)
+                .stream()
+                .map(s -> modelMapper.map(s, StudentDTO.class))
+                .collect(Collectors.toList());
     }
 }

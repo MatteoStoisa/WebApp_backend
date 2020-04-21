@@ -1,6 +1,5 @@
 package it.polito.ai.laboratorio2.entities;
 
-import it.polito.ai.laboratorio2.services.exceptions.TeamInvalidMembersNumberException;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -36,14 +35,13 @@ public class Student {
     }
 
     public void removeTeam(Team team) {
-        if(this.teams.contains(team))
-            this.teams.remove(team);
+        this.teams.remove(team);
         if(team.getMembers().contains(this))
             team.removeMember(this);
     }
 
     @Override
     public String toString() {
-        return this.id + " " + this.name + " " + this.firstName;
+        return "Student: "+this.id+" "+this.name+" "+this.firstName+")";
     }
 }

@@ -34,19 +34,18 @@ public class Course {
         if(!this.teams.contains(team))
             this.teams.add(team);
         if(!team.getCourse().equals(this))
-            team.selectCourse(this);
+            team.setCourse(this);
     }
 
     public void removeTeam(Team team) {
-        if(this.teams.contains(team))
-            this.teams.remove(team);
+        this.teams.remove(team);
         if(team.getCourse().equals(this))
-            team.unselectCourse(this);
+            team.setCourse(null);
     }
 
 
     @Override
     public String toString() {
-        return this.name + " " + this.min + " " + this.max;
+        return "Course: "+this.name+" "+this.min+" "+ this.max+")";
     }
 }
