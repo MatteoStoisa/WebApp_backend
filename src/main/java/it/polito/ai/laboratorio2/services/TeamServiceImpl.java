@@ -47,7 +47,9 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Boolean addCourse(CourseDTO course) {
-        if(course.getName() == null || course.getName().equals("") || course.getMin() < 0 || course.getMax() < course.getMin())
+        if(course.getName() == null)
+            return false;
+        if(courseRepository.findById(course.getName()).isPresent() || course.getName().equals("") || course.getMin() < 0 || course.getMax() < course.getMin())
             return false;
         courseRepository.save(modelMapper.map(course, Course.class));
         return true;
@@ -72,7 +74,9 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Boolean addStudent(StudentDTO student) {
-        if(student.getId() == null || student.getId().equals(""))
+        if(student.getId() == null)
+            return false;
+        if(studentRepository.findById(student.getId()).isPresent() || student.getId().equals(""))
             return false;
         studentRepository.save(modelMapper.map(student, Student.class));
         return true;

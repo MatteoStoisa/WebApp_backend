@@ -1,12 +1,10 @@
 package it.polito.ai.laboratorio2.dtos;
 
 import lombok.Data;
-
-import javax.persistence.Id;
+import org.springframework.hateoas.RepresentationModel;
 
 @Data
-public class CourseDTO {
-    @Id
+public class CourseDTO extends RepresentationModel<CourseDTO> {
     private String name;
     private int min;
     private int max;
