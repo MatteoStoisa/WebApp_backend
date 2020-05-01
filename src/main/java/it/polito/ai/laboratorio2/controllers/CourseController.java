@@ -2,6 +2,7 @@ package it.polito.ai.laboratorio2.controllers;
 
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.services.NotificationService;
 import it.polito.ai.laboratorio2.services.TeamService;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 public class CourseController {
     @Autowired
     TeamService teamService;
+    @Autowired
+    NotificationService notificationService;
 
     @GetMapping({"", "/"})
     public List<CourseDTO> all() {

@@ -29,3 +29,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# ignore #
+/mariadbVolume/
+.mvn
+/target/
+/src/main/resources/application.properties

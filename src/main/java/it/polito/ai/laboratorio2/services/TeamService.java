@@ -3,7 +3,6 @@ package it.polito.ai.laboratorio2.services;
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
 import it.polito.ai.laboratorio2.dtos.TeamDTO;
-import it.polito.ai.laboratorio2.entities.Student;
 
 import java.io.Reader;
 import java.util.List;
