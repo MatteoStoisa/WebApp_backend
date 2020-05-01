@@ -1,8 +1,10 @@
 HELP.md
 target/
+mariadbVolume/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**
 !**/src/test/**
+src/main/resources/application.properties
 
 ### STS ###
 .apt_generated
@@ -30,8 +32,3 @@ build/
 ### VS Code ###
 .vscode/
 
-# ignore #
-/mariadbVolume/
-.mvn
-/target/
-/src/main/resources/application.properties
