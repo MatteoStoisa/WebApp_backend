@@ -273,4 +273,19 @@ public class TeamServiceImpl implements TeamService {
                 .map(s -> modelMapper.map(s, StudentDTO.class))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public void setTeamStatus(Long teamId, int status) {
+        if(teamRepository.findById(teamId).isPresent()) {
+            teamRepository.getOne(teamId).setStatus(status);
+        }
+    }
+
+    @Override
+    public void evictTeam(Long teamId) {
+        if(teamRepository.findById(teamId).isPresent()) {
+            teamRepository.delete(teamRepository.getOne(teamId));
+        }
+        //TODO: have to remove team?
+    }
 }

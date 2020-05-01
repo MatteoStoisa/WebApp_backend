@@ -14,7 +14,7 @@ public class Team {
     @GeneratedValue
     private Long id;
     private String name;
-    private int status;
+    private int status; //0: proposed - 1: confirmed
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
