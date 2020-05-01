@@ -18,7 +18,7 @@ public class StudentController {
     TeamService teamService;
 
     @GetMapping({"", "/"})
-    List<StudentDTO> all() {
+    public List<StudentDTO> all() {
         return teamService.getAllStudents()
                 .stream()
                 .map(ModelHelper::enrich)
@@ -26,7 +26,7 @@ public class StudentController {
     }
 
     @GetMapping("/{id}")
-    StudentDTO getOne(@PathVariable("id") String id) {
+    public StudentDTO getOne(@PathVariable("id") String id) {
         Optional<StudentDTO> studentDTO = teamService.getStudent(id);
         if(studentDTO.isPresent()) {
             return ModelHelper.enrich(studentDTO.get());
@@ -36,7 +36,7 @@ public class StudentController {
     }
 
     @PostMapping({"", "/"})
-    StudentDTO addStudent(@RequestBody StudentDTO studentDTO) {
+    public StudentDTO addStudent(@RequestBody StudentDTO studentDTO) {
         if(teamService.addStudent(studentDTO))
             return ModelHelper.enrich(studentDTO);
         else
