@@ -164,7 +164,7 @@ public class TeamServiceImpl implements TeamService {
         /*
         .csv format required:
             id,firstName,name
-            s265542,Matteo,Stoisa
+            s265542,aaa,bbb
             [...]
          */
         CsvToBean<StudentDTO> csvToBean = new CsvToBeanBuilder(r)

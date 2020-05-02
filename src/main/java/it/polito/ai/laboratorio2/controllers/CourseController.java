@@ -2,6 +2,8 @@ package it.polito.ai.laboratorio2.controllers;
 
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.dtos.TeamDTO;
+import it.polito.ai.laboratorio2.dtos.TeamProposal;
 import it.polito.ai.laboratorio2.services.NotificationService;
 import it.polito.ai.laboratorio2.services.TeamService;
 import lombok.extern.java.Log;
@@ -45,7 +47,7 @@ public class CourseController {
             return ModelHelper.enrich(courseDTO.get());
         }
         else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, name);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "course "+name+" not found");
     }
 
     @GetMapping("/{name}/enrolled")
@@ -61,36 +63,48 @@ public class CourseController {
         if(teamService.addCourse(courseDTO))
             return ModelHelper.enrich(courseDTO);
         else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, courseDTO.getName());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "invalid course");
     }
 
     @PostMapping("/{name}/enrollOne")
-    public CourseDTO enrollOne(@RequestBody Map<String, String> input, @PathVariable("name") String courseName) {
-        if(teamService.addStudentToCourse(input.get("studentId"), courseName))
+    public CourseDTO enrollOne(@RequestBody Map<String, String> requestBody,
+                               @PathVariable("name") String courseName) {
+        if(teamService.addStudentToCourse(requestBody.get("studentId"), courseName))
             return ModelHelper.enrich(teamService.getCourse(courseName).get());
         else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, input.get("studentId")+courseName);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "invalid parameters");
     }
 
     @PostMapping("/{name}/enrollMany")
-    public List<Boolean> enrollStudents(@PathVariable("name") String courseName, @RequestParam("file") MultipartFile file){
+    public List<Boolean> enrollStudents(@PathVariable("name") String courseName,
+                                        @RequestParam("file") MultipartFile file){
         if(file == null)
-            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "no file");
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "file error");
         if(file.getContentType().equals("text/csv")) {
             List<Boolean> booleanList = new ArrayList<>();
             try {
                 Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
                 booleanList = teamService.addAndEnroll(reader, courseName);
                 return booleanList;
-            } catch (IOException IOE) {
-                booleanList.add(false);
-                return booleanList;
+            } catch (IOException c) {
+                throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, file.getName()+" file error");
             }
         }
         else
-            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, file.getName());
-        //TODO: test better
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, file.getName()+" wrong file extension");
+        //TODO: exception manage
     }
 
-
+    @PostMapping("/{name}/proposeTeam")
+    public TeamDTO proposeTeam(@PathVariable("name") String courseName,
+                               @RequestBody TeamProposal teamProposal) {
+        log.info("proposing team");
+        try {
+            TeamDTO teamDTO = teamService.proposeTeam(courseName,teamProposal.getTeamName(), teamProposal.getMemberIds());
+            notificationService.notifyTeam(teamDTO, teamProposal.getMemberIds());
+            return teamDTO;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "");
+        }
+    }
 }
