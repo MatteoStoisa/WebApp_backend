@@ -214,7 +214,6 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamDTO proposeTeam(String courseId, String name, List<String> memberIds) {
-        log.info("entered function");
         if(!courseRepository.findById(courseId).isPresent())
             throw new CourseNotFoundException();
         if(!courseRepository.getOne(courseId).isEnabled())
@@ -286,6 +285,5 @@ public class TeamServiceImpl implements TeamService {
         if(teamRepository.findById(teamId).isPresent()) {
             teamRepository.delete(teamRepository.getOne(teamId));
         }
-        //TODO: have to remove team?
     }
 }

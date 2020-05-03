@@ -92,19 +92,18 @@ public class CourseController {
         }
         else
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, file.getName()+" wrong file extension");
-        //TODO: exception manage
+        //TODO: improve exception management
     }
 
     @PostMapping("/{name}/proposeTeam")
     public TeamDTO proposeTeam(@PathVariable("name") String courseName,
                                @RequestBody TeamProposal teamProposal) {
-        log.info("proposing team");
         try {
             TeamDTO teamDTO = teamService.proposeTeam(courseName,teamProposal.getTeamName(), teamProposal.getMemberIds());
             notificationService.notifyTeam(teamDTO, teamProposal.getMemberIds());
             return teamDTO;
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "invalid team proposal");
         }
     }
 }

@@ -10,9 +10,10 @@ import java.util.List;
 
 @Repository
 public interface TokenRepository extends JpaRepository<Token, String> {
-    //TODO: test < timestamp
-    @Query("SELECT t FROM Token t WHERE t.expiryDate<:t")
-    List<Token> findAllByExpiryBefore(Timestamp t);
+    //TODO: test t.expiryDate<:timestamp
+    //TODO: implement background thread to remove old tokens
+    @Query("SELECT t FROM Token t WHERE t.expiryDate<:timestamp")
+    List<Token> findAllByExpiryBefore(Timestamp timestamp);
     @Query("SELECT t FROM Token t WHERE t.teamId=:teamId")
     List<Token> findAllByTeamId(Long teamId);
 }
