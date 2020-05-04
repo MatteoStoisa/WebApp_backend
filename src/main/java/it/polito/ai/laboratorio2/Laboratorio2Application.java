@@ -27,7 +27,7 @@ public class Laboratorio2Application {
     ModelMapper modelMapper() {
         return new ModelMapper();
     }
-
+/*
     @Component
     //@Slf4j
     public class DataInitializer implements CommandLineRunner {
@@ -59,7 +59,7 @@ public class Laboratorio2Application {
             //this.users.findAll().forEach(v -> log.debug(" User :" + v.toString()));
         }
     }
-
+*/
 }
 
 

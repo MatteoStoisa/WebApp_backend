@@ -60,6 +60,7 @@ public class CourseController {
 
     @PostMapping({"", "/"})
     public CourseDTO addCourse(@RequestBody CourseDTO courseDTO) {
+        //TODO: teacher has to be added to course (should be already logged)
         if(teamService.addCourse(courseDTO))
             return ModelHelper.enrich(courseDTO);
         else

@@ -22,12 +22,21 @@ public class Course {
     private List<Student> students = new ArrayList<>();
     @OneToMany(mappedBy = "course")
     private List<Team> teams = new ArrayList<>();
+    @ManyToMany(mappedBy = "courses")
+    private List<Teacher> teachers = new ArrayList<>();
 
     public void addStudent(Student student) {
         if(!this.students.contains(student))
             this.students.add(student);
         if(!student.getCourses().contains(this))
             student.addCourse(this);
+    }
+
+    public void addTeacher(Teacher teacher) {
+        if(!this.teachers.contains(teacher))
+            this.teachers.add(teacher);
+        if(!teacher.getCourses().contains(this))
+            teacher.addCourse(this);
     }
 
     public void addTeam(Team team) {

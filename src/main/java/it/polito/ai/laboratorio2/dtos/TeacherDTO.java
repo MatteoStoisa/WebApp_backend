@@ -4,8 +4,8 @@ import lombok.Data;
 import org.springframework.hateoas.RepresentationModel;
 
 @Data
-public class TeamDTO extends RepresentationModel<CourseDTO> {
-    private Long id;
+public class TeacherDTO extends RepresentationModel<CourseDTO> {
+    private String email;
     private String name;
-    private int status;
+    private String firstName;
 }
