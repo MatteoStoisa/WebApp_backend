@@ -17,6 +17,7 @@ import java.util.List;
 
 @Component
 public class JwtTokenProvider {
+    //TODO: have to take from application.properties
     //@Value("${security.jwt.token.secret-key:secret}")
     private String secretKey = "secret";
     //@Value("${security.jwt.token.expire-length:3600000}")
