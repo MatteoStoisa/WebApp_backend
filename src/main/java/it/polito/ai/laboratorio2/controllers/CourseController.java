@@ -33,6 +33,7 @@ public class CourseController {
     NotificationService notificationService;
 
     @GetMapping({"", "/"})
+
     public List<CourseDTO> all() {
         return teamService.getAllCourses()
                 .stream()

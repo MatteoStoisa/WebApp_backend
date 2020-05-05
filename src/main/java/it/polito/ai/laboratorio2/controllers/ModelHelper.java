@@ -2,6 +2,7 @@ package it.polito.ai.laboratorio2.controllers;
 
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.dtos.TeacherDTO;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
 public class ModelHelper {
@@ -14,5 +15,10 @@ public class ModelHelper {
     public static StudentDTO enrich(StudentDTO studentDTO) {
         studentDTO.add(WebMvcLinkBuilder.linkTo(StudentController.class).slash(studentDTO.getId()).withSelfRel());
         return studentDTO;
+    }
+
+    public static TeacherDTO enrich(TeacherDTO teacherDTO) {
+        teacherDTO.add(WebMvcLinkBuilder.linkTo(StudentController.class).slash(teacherDTO.getEmail()).withSelfRel());
+        return teacherDTO;
     }
 }

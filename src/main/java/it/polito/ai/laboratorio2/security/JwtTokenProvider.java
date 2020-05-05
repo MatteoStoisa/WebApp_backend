@@ -1,8 +1,9 @@
 package it.polito.ai.laboratorio2.security;
 
 import io.jsonwebtoken.*;
-import it.polito.ai.laboratorio2.services.exceptions.jwtException.JwtAuthenticationException;
+import it.polito.ai.laboratorio2.security.exceptions.jwtException.JwtAuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,11 +18,10 @@ import java.util.List;
 
 @Component
 public class JwtTokenProvider {
-    //TODO: have to take from application.properties
-    //@Value("${security.jwt.token.secret-key:secret}")
-    private String secretKey = "secret";
-    //@Value("${security.jwt.token.expire-length:3600000}")
-    private long validityInMilliseconds = 3600000; // 1h
+    @Value("${jwt.secret}")
+    private String secretKey;
+    @Value("${jwt.validity}")
+    private long validityInMilliseconds;
     @Autowired
     private UserDetailsService userDetailsService;
     @PostConstruct
@@ -59,7 +59,7 @@ public class JwtTokenProvider {
             Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
             return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            throw new JwtAuthenticationException();
+            throw new JwtAuthenticationException("");
         }
     }
 }

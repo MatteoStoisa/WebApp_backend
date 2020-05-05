@@ -2,10 +2,7 @@ package it.polito.ai.laboratorio2.entities;
 
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,8 +19,8 @@ public class Course {
     private List<Student> students = new ArrayList<>();
     @OneToMany(mappedBy = "course")
     private List<Team> teams = new ArrayList<>();
-    @ManyToMany(mappedBy = "courses")
-    private List<Teacher> teachers = new ArrayList<>();
+    @OneToOne(mappedBy = "course")
+    private Teacher teacher = null;
 
     public void addStudent(Student student) {
         if(!this.students.contains(student))
@@ -32,10 +29,10 @@ public class Course {
             student.addCourse(this);
     }
 
-    public void addTeacher(Teacher teacher) {
-        if(!this.teachers.contains(teacher))
-            this.teachers.add(teacher);
-        if(!teacher.getCourses().contains(this))
+    public void setTeacher(Teacher teacher) {
+        if(this.teacher != teacher)
+            this.teacher = teacher;
+        if(teacher.getCourse() != this)
             teacher.addCourse(this);
     }
 

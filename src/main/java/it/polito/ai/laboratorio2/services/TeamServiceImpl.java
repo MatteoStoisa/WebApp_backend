@@ -4,13 +4,10 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.dtos.TeacherDTO;
 import it.polito.ai.laboratorio2.dtos.TeamDTO;
-import it.polito.ai.laboratorio2.entities.Course;
-import it.polito.ai.laboratorio2.entities.Student;
-import it.polito.ai.laboratorio2.entities.Team;
-import it.polito.ai.laboratorio2.repositories.CourseRepository;
-import it.polito.ai.laboratorio2.repositories.StudentRepository;
-import it.polito.ai.laboratorio2.repositories.TeamRepository;
+import it.polito.ai.laboratorio2.entities.*;
+import it.polito.ai.laboratorio2.repositories.*;
 import it.polito.ai.laboratorio2.services.exceptions.courseException.CourseNotEnabledException;
 import it.polito.ai.laboratorio2.services.exceptions.courseException.CourseNotFoundException;
 import it.polito.ai.laboratorio2.services.exceptions.studentException.StudentAlreadyInTeamException;
@@ -19,15 +16,22 @@ import it.polito.ai.laboratorio2.services.exceptions.studentException.StudentNot
 import it.polito.ai.laboratorio2.services.exceptions.teamException.TeamMinMaxException;
 import it.polito.ai.laboratorio2.services.exceptions.teamException.TeamNotFoundException;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,10 +44,12 @@ public class TeamServiceImpl implements TeamService {
     StudentRepository studentRepository;
     @Autowired
     TeamRepository teamRepository;
-
+    @Autowired
+    TeacherRepository teacherRepository;
+    @Autowired
+    UserRepository userRepository;
     @Autowired
     ModelMapper modelMapper;
-
 
     @Override
     public Boolean addCourse(CourseDTO course) {
@@ -51,6 +57,7 @@ public class TeamServiceImpl implements TeamService {
             return false;
         if(courseRepository.findById(course.getName()).isPresent() || course.getName().equals("") || course.getMin() < 0 || course.getMax() < course.getMin())
             return false;
+        //TODO: have to add teacher (API caller) to course.teacher (entity)
         courseRepository.save(modelMapper.map(course, Course.class));
         return true;
     }
@@ -78,6 +85,15 @@ public class TeamServiceImpl implements TeamService {
             return false;
         if(studentRepository.findById(student.getId()).isPresent() || student.getId().equals(""))
             return false;
+        User user = new User();
+        user.setUsername(student.getId());
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String password = StringUtils.left(UUID.randomUUID().toString(), 8);
+        log.info(password + " generated password");
+        //TODO: send email with generated password
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRoles(Arrays.asList( "STUDENT_ROLE"));
+        userRepository.save(user);
         studentRepository.save(modelMapper.map(student, Student.class));
         return true;
     }
@@ -96,6 +112,42 @@ public class TeamServiceImpl implements TeamService {
         return studentRepository.findAll()
                 .stream()
                 .map(s -> modelMapper.map(s, StudentDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Boolean addTeacher(TeacherDTO teacherDTO) {
+        if(teacherDTO.getEmail() == null)
+            return false;
+        if(teacherRepository.findById(teacherDTO.getEmail()).isPresent() || teacherDTO.getEmail().equals(""))
+            return false;
+        User user = new User();
+        user.setUsername(teacherDTO.getEmail());
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String password = StringUtils.left(UUID.randomUUID().toString(), 8);
+        log.info(password + " generated password");
+        //TODO: send email with generated password
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRoles(Arrays.asList( "TEACHER_ROLE"));
+        userRepository.save(user);
+        teacherRepository.save(modelMapper.map(teacherDTO, Teacher.class));
+        return true;
+    }
+
+    @Override
+    public Optional<TeacherDTO> getTeacher(String email) {
+        return teacherRepository.findAll()
+                .stream()
+                .filter(s -> s.getEmail().equals(email))
+                .findFirst()
+                .map(t -> modelMapper.map(t, TeacherDTO.class));
+    }
+
+    @Override
+    public List<TeacherDTO> getAllTeachers() {
+        return teacherRepository.findAll()
+                .stream()
+                .map(t -> modelMapper.map(t, TeacherDTO.class))
                 .collect(Collectors.toList());
     }
 

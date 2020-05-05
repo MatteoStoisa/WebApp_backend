@@ -5,15 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthenticationRequest implements Serializable {
-    //TODO: what is that??
-    //private static final long serialVersionUID = -6986746375915710855L;
+public class AuthenticationRequest{
     private String username;
     private String password;
 }

@@ -1,9 +1,19 @@
 package it.polito.ai.laboratorio2.controllers;
 
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.repositories.UserRepository;
 import it.polito.ai.laboratorio2.services.TeamService;
+import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -13,6 +23,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/API/students")
+@Log(topic = "StudentController")
 public class StudentController {
     @Autowired
     TeamService teamService;
@@ -27,6 +38,7 @@ public class StudentController {
 
     @GetMapping("/{id}")
     public StudentDTO getOne(@PathVariable("id") String id) {
+        log.info(SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString());
         Optional<StudentDTO> studentDTO = teamService.getStudent(id);
         if(studentDTO.isPresent()) {
             return ModelHelper.enrich(studentDTO.get());

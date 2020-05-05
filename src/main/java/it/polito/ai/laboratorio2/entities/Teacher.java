@@ -14,14 +14,14 @@ public class Teacher {
     private String email;
     private String name;
     private String firstName;
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "teacher_course", joinColumns = @JoinColumn(name = "teacher_email"), inverseJoinColumns = @JoinColumn(name = "course_name") )
-    private List<Course> courses = new ArrayList<>();
+    private Course course = null;
 
     public void addCourse(Course course) {
-        if(!this.courses.contains(course))
-            this.courses.add(course);
-        if(!course.getTeachers().contains(this))
-            course.addTeacher(this);
+        if(this.course != course)
+            this.course = course;
+        if(course.getTeacher() != this)
+            course.setTeacher(this);
     }
 }
