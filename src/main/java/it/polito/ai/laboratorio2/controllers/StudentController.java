@@ -38,7 +38,6 @@ public class StudentController {
 
     @GetMapping("/{id}")
     public StudentDTO getOne(@PathVariable("id") String id) {
-        log.info(SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString());
         Optional<StudentDTO> studentDTO = teamService.getStudent(id);
         if(studentDTO.isPresent()) {
             return ModelHelper.enrich(studentDTO.get());

@@ -19,12 +19,6 @@ import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -92,7 +86,7 @@ public class TeamServiceImpl implements TeamService {
         log.info(password + " generated password");
         //TODO: send email with generated password
         user.setPassword(passwordEncoder.encode(password));
-        user.setRoles(Arrays.asList( "STUDENT_ROLE"));
+        user.setRoles(Arrays.asList( "ROLE_STUDENT"));
         userRepository.save(user);
         studentRepository.save(modelMapper.map(student, Student.class));
         return true;
@@ -128,7 +122,7 @@ public class TeamServiceImpl implements TeamService {
         log.info(password + " generated password");
         //TODO: send email with generated password
         user.setPassword(passwordEncoder.encode(password));
-        user.setRoles(Arrays.asList( "TEACHER_ROLE"));
+        user.setRoles(Arrays.asList( "ROLE_TEACHER"));
         userRepository.save(user);
         teacherRepository.save(modelMapper.map(teacherDTO, Teacher.class));
         return true;

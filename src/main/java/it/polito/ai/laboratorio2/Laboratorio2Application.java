@@ -48,10 +48,6 @@ public class Laboratorio2Application {
         StudentRepository studentRepository;
         @Autowired
         TeacherRepository teacherRepository;
-        @Bean
-        PasswordEncoder getEncoder() {
-            return new BCryptPasswordEncoder();
-        }
         @Autowired
         PasswordEncoder passwordEncoder;
         @Override
@@ -59,13 +55,13 @@ public class Laboratorio2Application {
             //STUDENT1
             Student student1 = new Student();
             student1.setId("123456");
-            student1.setName("studentNme1");
+            student1.setName("studentName1");
             student1.setFirstName("studentFirstName1");
             this.studentRepository.save(student1);
             this.users.save(User.builder()
                     .username(student1.getId())
                     .password(this.passwordEncoder.encode("studentPassword1"))
-                    .roles(Arrays.asList( "STUDENT_ROLE"))
+                    .roles(Arrays.asList( "ROLE_STUDENT"))
                     .build()
             );
             //STUDENT2
@@ -77,7 +73,7 @@ public class Laboratorio2Application {
             this.users.save(User.builder()
                     .username(student2.getId())
                     .password(this.passwordEncoder.encode("studentPassword2"))
-                    .roles(Arrays.asList("STUDENT_ROLE"))
+                    .roles(Arrays.asList("ROLE_STUDENT"))
                     .build()
             );
             //TEACHER
@@ -89,14 +85,14 @@ public class Laboratorio2Application {
             this.users.save(User.builder()
                     .username(teacher1.getEmail())
                     .password(this.passwordEncoder.encode("teacherPassword1"))
-                    .roles(Arrays.asList("TEACHER_ROLE"))
+                    .roles(Arrays.asList("ROLE_TEACHER"))
                     .build()
             );
             //ADMIN
             this.users.save(User.builder()
                     .username("adminUsername")
                     .password(this.passwordEncoder.encode("adminPassword"))
-                    .roles(Arrays.asList("ADMIN_ROLE"))
+                    .roles(Arrays.asList("ROLE_ADMIN"))
                     .build()
             );
         }
