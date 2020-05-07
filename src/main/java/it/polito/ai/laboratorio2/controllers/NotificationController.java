@@ -21,8 +21,7 @@ public class NotificationController {
     @GetMapping("/confirm/{tokenId}")
     public String confirmToken(@PathVariable("tokenId") String tokenId) {
         if(notificationService.confirm(tokenId))
-            return "teamReqtestAccepted";
-        //TODO: no difference between intermediate or final accept
+            return "teamRequestAccepted";
         return "teamRequestRejected";
     }
 

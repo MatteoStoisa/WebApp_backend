@@ -87,7 +87,7 @@ public class NotificationServiceImpl implements NotificationService {
                     WebMvcLinkBuilder.linkTo(NotificationController.class).slash("/confirm/"+token.getId()) + " \n" +
                     "or REJECT it: \n" +
                     WebMvcLinkBuilder.linkTo(NotificationController.class).slash("/reject/"+token.getId());
-            //TODO: test mail here
+            //TODO: test mail hardcoded here
             sendMessage(/*address*/ "derrick1rose95@gmail.com", "Confirm Team Invitation", body);
         }
     }

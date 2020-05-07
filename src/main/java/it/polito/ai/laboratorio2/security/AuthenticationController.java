@@ -55,5 +55,5 @@ public class AuthenticationController {
         return ok(model);
     }
 
-    //TODO: registration?
+    //TODO: have to implement registration instead of admin roles
 }

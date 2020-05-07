@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,7 +38,7 @@ public class TeacherController {
     }
 
     @PostMapping({"", "/"})
-    public TeacherDTO addTeacher(@RequestBody TeacherDTO teacherDTO) {
+    public TeacherDTO addTeacher(@RequestBody @Valid TeacherDTO teacherDTO) {
         if(teamService.addTeacher(teacherDTO))
             return ModelHelper.enrich(teacherDTO);
         else

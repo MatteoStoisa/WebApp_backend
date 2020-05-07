@@ -19,8 +19,8 @@ import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -55,33 +55,26 @@ public class TeamServiceImpl implements TeamService {
             return false;
         if(courseRepository.findById(course.getName()).isPresent() || course.getName().equals("") || course.getMin() < 0 || course.getMax() < course.getMin())
             return false;
-        //TODO: have to add teacher (API caller) to course.teacher (entity)
-        courseRepository.save(modelMapper.map(course, Course.class));
+        Course newCourse = modelMapper.map(course, Course.class);
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(teacherRepository.existsById(((UserDetails)principal).getUsername()))
+            newCourse.setTeacher(teacherRepository.getOne(((UserDetails)principal).getUsername()));
+        courseRepository.save(newCourse);
         return true;
     }
 
     @Override
     public Optional<CourseDTO> getCourse(String name) {
-        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_ADMIN")
-                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
-                .stream()
-                .anyMatch(c -> c.getName().equals(name)))
-            return courseRepository.findAll()
+        return courseRepository.findAll()
                 .stream()
                 .filter(c -> c.getName().equals(name))
                 .findFirst()
                 .map(c -> modelMapper.map(c, CourseDTO.class));
-        return Optional.empty();
     }
 
     @Override
     public List<CourseDTO> getAllCourses() {
-        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_ADMIN"))
-            return courseRepository.findAll()
-                    .stream()
-                    .map(c -> modelMapper.map(c, CourseDTO.class))
-                    .collect(Collectors.toList());
-        return studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
+        return courseRepository.findAll()
                 .stream()
                 .map(c -> modelMapper.map(c, CourseDTO.class))
                 .collect(Collectors.toList());
@@ -89,9 +82,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Boolean addStudent(StudentDTO student) {
-        if(student.getId() == null)
-            return false;
-        if(studentRepository.findById(student.getId()).isPresent() || student.getId().equals(""))
+        if(studentRepository.existsById(student.getId()))
             return false;
         User user = new User();
         user.setUsername(student.getId());
@@ -102,6 +93,7 @@ public class TeamServiceImpl implements TeamService {
         userRepository.save(user);
         studentRepository.save(modelMapper.map(student, Student.class));
         log.info("new student password: "+password);
+        //TODO: disabled notification here
         //notificationService.sendMessage("s"+student.getId()+"@studenti.polito.it","new student user created", "new password: "+password);
         return true;
     }
@@ -125,20 +117,19 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Boolean addTeacher(TeacherDTO teacherDTO) {
-        if(teacherDTO.getEmail() == null)
-            return false;
-        if(teacherRepository.findById(teacherDTO.getEmail()).isPresent() || teacherDTO.getEmail().equals(""))
+        if(teacherRepository.existsById(teacherDTO.getEmail()))
             return false;
         User user = new User();
         user.setUsername(teacherDTO.getEmail());
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         String password = StringUtils.left(UUID.randomUUID().toString(), 8);
-        log.info(password + " generated password");
-        //TODO: send email with generated password
+        log.info("new teacher password: "+password);
         user.setPassword(passwordEncoder.encode(password));
         user.setRoles(Arrays.asList( "ROLE_TEACHER"));
         userRepository.save(user);
         teacherRepository.save(modelMapper.map(teacherDTO, Teacher.class));
+        //TODO: disabled notification here
+        //notificationService.sendMessage(teacherDTO.getEmail(),"new teacher user created", "new password: "+password);
         return true;
     }
 
@@ -170,15 +161,11 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public Boolean addStudentToCourse(String studentId, String courseName) throws StudentNotFoundException, CourseNotFoundException{
-        try {
-            if(!courseRepository.findById(courseName).isPresent())
-                throw new CourseNotFoundException();
-            if(!studentRepository.findById(studentId).isPresent())
-                throw new StudentNotFoundException();
-        } catch (StudentNotFoundException | CourseNotFoundException e) {
-            return false;
-        }
+    public Boolean addStudentToCourse(String studentId, String courseName){
+        if(!courseRepository.findById(courseName).isPresent())
+            throw new CourseNotFoundException();
+        if(!studentRepository.findById(studentId).isPresent())
+            throw new StudentNotFoundException();
         if(!courseRepository.getOne(courseName).isEnabled())
             return false;
         courseRepository.getOne(courseName).addStudent(studentRepository.getOne(studentId));
@@ -266,14 +253,10 @@ public class TeamServiceImpl implements TeamService {
     public List<StudentDTO> getMembers(Long teamId) {
         if(!teamRepository.findById(teamId).isPresent())
             throw new TeamNotFoundException();
-        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_ADMIN")
-            || SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_TEACHER")
-            || teamRepository.getOne(teamId).getMembers().contains(studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName())))
-            return teamRepository.getOne(teamId).getMembers()
+        return teamRepository.getOne(teamId).getMembers()
                 .stream()
                 .map(t -> modelMapper.map(t, StudentDTO.class))
                 .collect(Collectors.toList());
-        throw new TeamNotFoundException();
     }
 
     @Override
@@ -311,45 +294,30 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamDTO> getTeamForCourse(String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
-        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities()
-                .stream().anyMatch(grantedAuthority -> grantedAuthority.toString().equals("ROLE_ADMIN"))
-                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
-                .stream().anyMatch(course -> course.getName().equals(courseName)))
-            return courseRepository.getOne(courseName).getTeams()
-                    .stream()
-                    .map(t -> modelMapper.map(t, TeamDTO.class))
-                    .collect(Collectors.toList());
-        throw new CourseNotFoundException();
+        return courseRepository.getOne(courseName).getTeams()
+                .stream()
+                .map(t -> modelMapper.map(t, TeamDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<StudentDTO> getStudentsInTeams(String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
-        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities()
-                .stream().anyMatch(grantedAuthority -> grantedAuthority.toString().equals("ROLE_ADMIN"))
-                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
-                .stream().anyMatch(course -> course.getName().equals(courseName)))
-            return courseRepository.getStudentsInTeams(courseName)
-                    .stream()
-                    .map(s -> modelMapper.map(s, StudentDTO.class))
-                    .collect(Collectors.toList());
-        throw new CourseNotFoundException();
+        return courseRepository.getStudentsInTeams(courseName)
+                .stream()
+                .map(s -> modelMapper.map(s, StudentDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<StudentDTO> getAvailableStudents(String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
-        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities()
-                .stream().anyMatch(grantedAuthority -> grantedAuthority.toString().equals("ROLE_ADMIN"))
-                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
-                .stream().anyMatch(course -> course.getName().equals(courseName)))
-            return courseRepository.getStudentsNotInTeams(courseName)
-                    .stream()
-                    .map(s -> modelMapper.map(s, StudentDTO.class))
-                    .collect(Collectors.toList());
-        throw new CourseNotFoundException();
+        return courseRepository.getStudentsNotInTeams(courseName)
+                .stream()
+                .map(s -> modelMapper.map(s, StudentDTO.class))
+                .collect(Collectors.toList());
     }
 
     @Override

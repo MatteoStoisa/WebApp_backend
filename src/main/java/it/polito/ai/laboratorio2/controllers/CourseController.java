@@ -17,10 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -61,7 +58,6 @@ public class CourseController {
 
     @PostMapping({"", "/"})
     public CourseDTO addCourse(@RequestBody CourseDTO courseDTO) {
-        //TODO: teacher has to be added to course (should be already logged)
         if(teamService.addCourse(courseDTO))
             return ModelHelper.enrich(courseDTO);
         else
@@ -82,7 +78,7 @@ public class CourseController {
                                         @RequestParam("file") MultipartFile file){
         if(file == null)
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "file error");
-        if(file.getContentType().equals("text/csv")) {
+        if(Objects.equals(file.getContentType(), "text/csv")) {
             List<Boolean> booleanList = new ArrayList<>();
             try {
                 Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
