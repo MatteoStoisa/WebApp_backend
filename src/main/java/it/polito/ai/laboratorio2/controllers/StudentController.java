@@ -1,6 +1,8 @@
 package it.polito.ai.laboratorio2.controllers;
 
+import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.dtos.TeamDTO;
 import it.polito.ai.laboratorio2.repositories.UserRepository;
 import it.polito.ai.laboratorio2.services.TeamService;
 import lombok.extern.java.Log;
@@ -52,5 +54,21 @@ public class StudentController {
             return ModelHelper.enrich(studentDTO);
         else
             throw new ResponseStatusException(HttpStatus.CONFLICT, studentDTO.getId());
+    }
+
+    @GetMapping("/{id}/getCourses")
+    public List<CourseDTO> getCourses(@PathVariable("id") String id) {
+        return teamService.getCourses(id)
+                .stream()
+                .map(ModelHelper::enrich)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/{id}/getTeams")
+    public List<TeamDTO> getTeams(@PathVariable("id") String id) {
+        return teamService.getTeamsForStudent(id)
+                .stream()
+                .map(ModelHelper::enrich)
+                .collect(Collectors.toList());
     }
 }

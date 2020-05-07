@@ -19,7 +19,7 @@ public class Course {
     private List<Student> students = new ArrayList<>();
     @OneToMany(mappedBy = "course")
     private List<Team> teams = new ArrayList<>();
-    @OneToOne(mappedBy = "course")
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private Teacher teacher = null;
 
     public void addStudent(Student student) {

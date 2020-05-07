@@ -21,14 +21,14 @@ public class NotificationController {
     @GetMapping("/confirm/{tokenId}")
     public String confirmToken(@PathVariable("tokenId") String tokenId) {
         if(notificationService.confirm(tokenId))
-            return "teamRequestAccepted.html";
+            return "teamReqtestAccepted";
         //TODO: no difference between intermediate or final accept
-        return "teamRequestRejected.html";
+        return "teamRequestRejected";
     }
 
     @GetMapping("/reject/{tokenId}")
     public String rejectToken(@PathVariable("tokenId") String tokenId) {
         notificationService.reject(tokenId);
-        return "teamRequestRejected.html";
+        return "teamRequestRejected";
     }
 }

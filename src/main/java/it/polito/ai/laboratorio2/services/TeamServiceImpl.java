@@ -19,6 +19,8 @@ import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,8 @@ public class TeamServiceImpl implements TeamService {
     UserRepository userRepository;
     @Autowired
     ModelMapper modelMapper;
+    @Autowired
+    NotificationService notificationService;
 
     @Override
     public Boolean addCourse(CourseDTO course) {
@@ -58,16 +62,26 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Optional<CourseDTO> getCourse(String name) {
-        return courseRepository.findAll()
+        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_ADMIN")
+                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
+                .stream()
+                .anyMatch(c -> c.getName().equals(name)))
+            return courseRepository.findAll()
                 .stream()
                 .filter(c -> c.getName().equals(name))
                 .findFirst()
                 .map(c -> modelMapper.map(c, CourseDTO.class));
+        return Optional.empty();
     }
 
     @Override
     public List<CourseDTO> getAllCourses() {
-        return courseRepository.findAll()
+        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_ADMIN"))
+            return courseRepository.findAll()
+                    .stream()
+                    .map(c -> modelMapper.map(c, CourseDTO.class))
+                    .collect(Collectors.toList());
+        return studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
                 .stream()
                 .map(c -> modelMapper.map(c, CourseDTO.class))
                 .collect(Collectors.toList());
@@ -83,12 +97,12 @@ public class TeamServiceImpl implements TeamService {
         user.setUsername(student.getId());
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         String password = StringUtils.left(UUID.randomUUID().toString(), 8);
-        log.info(password + " generated password");
-        //TODO: send email with generated password
         user.setPassword(passwordEncoder.encode(password));
         user.setRoles(Arrays.asList( "ROLE_STUDENT"));
         userRepository.save(user);
         studentRepository.save(modelMapper.map(student, Student.class));
+        log.info("new student password: "+password);
+        //notificationService.sendMessage("s"+student.getId()+"@studenti.polito.it","new student user created", "new password: "+password);
         return true;
     }
 
@@ -187,7 +201,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public List<Boolean> addAll(List<StudentDTO> students) {
-        List<Boolean> booleans = new ArrayList<Boolean>();
+        List<Boolean> booleans = new ArrayList<>();
         for(StudentDTO studentDTO : students) {
             booleans.add(addStudent(studentDTO));
         }
@@ -252,10 +266,14 @@ public class TeamServiceImpl implements TeamService {
     public List<StudentDTO> getMembers(Long teamId) {
         if(!teamRepository.findById(teamId).isPresent())
             throw new TeamNotFoundException();
-        return teamRepository.getOne(teamId).getMembers()
+        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_ADMIN")
+            || SecurityContextHolder.getContext().getAuthentication().getAuthorities().contains("ROLE_TEACHER")
+            || teamRepository.getOne(teamId).getMembers().contains(studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName())))
+            return teamRepository.getOne(teamId).getMembers()
                 .stream()
                 .map(t -> modelMapper.map(t, StudentDTO.class))
                 .collect(Collectors.toList());
+        throw new TeamNotFoundException();
     }
 
     @Override
@@ -293,30 +311,45 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamDTO> getTeamForCourse(String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
-        return courseRepository.getOne(courseName).getTeams()
-                .stream()
-                .map(t -> modelMapper.map(t, TeamDTO.class))
-                .collect(Collectors.toList());
+        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream().anyMatch(grantedAuthority -> grantedAuthority.toString().equals("ROLE_ADMIN"))
+                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
+                .stream().anyMatch(course -> course.getName().equals(courseName)))
+            return courseRepository.getOne(courseName).getTeams()
+                    .stream()
+                    .map(t -> modelMapper.map(t, TeamDTO.class))
+                    .collect(Collectors.toList());
+        throw new CourseNotFoundException();
     }
 
     @Override
     public List<StudentDTO> getStudentsInTeams(String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
-        return courseRepository.getStudentsInTeams(courseName)
-                .stream()
-                .map(s -> modelMapper.map(s, StudentDTO.class))
-                .collect(Collectors.toList());
+        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream().anyMatch(grantedAuthority -> grantedAuthority.toString().equals("ROLE_ADMIN"))
+                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
+                .stream().anyMatch(course -> course.getName().equals(courseName)))
+            return courseRepository.getStudentsInTeams(courseName)
+                    .stream()
+                    .map(s -> modelMapper.map(s, StudentDTO.class))
+                    .collect(Collectors.toList());
+        throw new CourseNotFoundException();
     }
 
     @Override
     public List<StudentDTO> getAvailableStudents(String courseName) {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
-        return courseRepository.getStudentsNotInTeams(courseName)
-                .stream()
-                .map(s -> modelMapper.map(s, StudentDTO.class))
-                .collect(Collectors.toList());
+        if(SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream().anyMatch(grantedAuthority -> grantedAuthority.toString().equals("ROLE_ADMIN"))
+                || studentRepository.getOne(SecurityContextHolder.getContext().getAuthentication().getName()).getCourses()
+                .stream().anyMatch(course -> course.getName().equals(courseName)))
+            return courseRepository.getStudentsNotInTeams(courseName)
+                    .stream()
+                    .map(s -> modelMapper.map(s, StudentDTO.class))
+                    .collect(Collectors.toList());
+        throw new CourseNotFoundException();
     }
 
     @Override

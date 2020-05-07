@@ -103,9 +103,43 @@ public class CourseController {
         try {
             TeamDTO teamDTO = teamService.proposeTeam(courseName,teamProposal.getTeamName(), teamProposal.getMemberIds());
             notificationService.notifyTeam(teamDTO, teamProposal.getMemberIds());
-            return teamDTO;
+            return ModelHelper.enrich(teamDTO);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "invalid team proposal");
         }
+    }
+
+    @GetMapping("/{name}/enable")
+    public void enableCourse(@PathVariable("name") String courseName) {
+        teamService.enableCourse(courseName);
+    }
+
+    @GetMapping("/{name}/disable")
+    public void disableCourse(@PathVariable("name") String courseName) {
+        teamService.disableCourse(courseName);
+    }
+
+    @GetMapping("/{name}/getTeams")
+    public List<TeamDTO> getTeams(@PathVariable("name") String courseName) {
+        return teamService.getTeamForCourse(courseName)
+                .stream()
+                .map(ModelHelper::enrich)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/{name}/getStudentsInTeams")
+    public List<StudentDTO> getStudentsInTeams(@PathVariable("name") String courseName) {
+        return teamService.getStudentsInTeams(courseName)
+                .stream()
+                .map(ModelHelper::enrich)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/{name}/getAvailableStudents")
+    public List<StudentDTO> getAvailableStudents(@PathVariable("name") String courseName) {
+        return teamService.getAvailableStudents(courseName)
+                .stream()
+                .map(ModelHelper::enrich)
+                .collect(Collectors.toList());
     }
 }
