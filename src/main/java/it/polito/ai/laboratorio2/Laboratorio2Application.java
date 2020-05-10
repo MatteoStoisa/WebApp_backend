@@ -1,11 +1,11 @@
 package it.polito.ai.laboratorio2;
 
+import ch.qos.logback.core.util.FixedDelay;
 import it.polito.ai.laboratorio2.entities.Student;
 import it.polito.ai.laboratorio2.entities.Teacher;
 import it.polito.ai.laboratorio2.entities.User;
-import it.polito.ai.laboratorio2.repositories.StudentRepository;
-import it.polito.ai.laboratorio2.repositories.TeacherRepository;
-import it.polito.ai.laboratorio2.repositories.UserRepository;
+import it.polito.ai.laboratorio2.repositories.*;
+import it.polito.ai.laboratorio2.services.TeamService;
 import lombok.extern.java.Log;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +13,19 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Date;
 
 @SpringBootApplication
 @Log(topic = "Laboratorio2Application")
+@EnableScheduling
 public class Laboratorio2Application {
 
     public static void main(String[] args) {
@@ -32,10 +37,26 @@ public class Laboratorio2Application {
         return new ModelMapper();
     }
 
+    @Autowired
+    TokenRepository tokenRepository;
+    @Autowired
+    TeamRepository teamRepository;
+
+    @Scheduled(fixedDelay = 1000 * 3600)
+    public void tokenCleaner() {
+        log.info("TokenCleaner thread activated");
+        tokenRepository.findAllByExpiryBefore(new Timestamp(new Date().getTime()))
+                .forEach(token -> {
+                    teamRepository.delete(teamRepository.getOne(token.getTeamId()));
+                    tokenRepository.delete(token);
+                });
+    }
+
     /*
     DEFINED USERS:
     -   123456              studentPassword1    STUDENT_ROLE
     -   234567              studentPassword2    STUDENT_ROLE
+    -   34567               studentPassword3    STUDENT_ROLE
     -   teacher1@mail.it    teacherPassword1    TEACHER_ROLE
     -   adminUsername       adminPassword       ADMIN_ROLE
      */

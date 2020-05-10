@@ -285,7 +285,6 @@ public class TeamServiceImpl implements TeamService {
         for (String memberId : memberIds) {
             team.addMember(studentRepository.getOne(memberId));
         }
-        System.out.println(team.toString());
         teamRepository.save(team);
         return modelMapper.map(team, TeamDTO.class);
     }
