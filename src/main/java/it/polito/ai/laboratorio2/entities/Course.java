@@ -2,10 +2,7 @@ package it.polito.ai.laboratorio2.entities;
 
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,12 +19,21 @@ public class Course {
     private List<Student> students = new ArrayList<>();
     @OneToMany(mappedBy = "course")
     private List<Team> teams = new ArrayList<>();
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private Teacher teacher = null;
 
     public void addStudent(Student student) {
         if(!this.students.contains(student))
             this.students.add(student);
         if(!student.getCourses().contains(this))
             student.addCourse(this);
+    }
+
+    public void setTeacher(Teacher teacher) {
+        if(this.teacher != teacher)
+            this.teacher = teacher;
+        if(teacher.getCourse() != this)
+            teacher.addCourse(this);
     }
 
     public void addTeam(Team team) {

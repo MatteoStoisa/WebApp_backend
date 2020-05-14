@@ -4,13 +4,10 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import it.polito.ai.laboratorio2.dtos.CourseDTO;
 import it.polito.ai.laboratorio2.dtos.StudentDTO;
+import it.polito.ai.laboratorio2.dtos.TeacherDTO;
 import it.polito.ai.laboratorio2.dtos.TeamDTO;
-import it.polito.ai.laboratorio2.entities.Course;
-import it.polito.ai.laboratorio2.entities.Student;
-import it.polito.ai.laboratorio2.entities.Team;
-import it.polito.ai.laboratorio2.repositories.CourseRepository;
-import it.polito.ai.laboratorio2.repositories.StudentRepository;
-import it.polito.ai.laboratorio2.repositories.TeamRepository;
+import it.polito.ai.laboratorio2.entities.*;
+import it.polito.ai.laboratorio2.repositories.*;
 import it.polito.ai.laboratorio2.services.exceptions.courseException.CourseNotEnabledException;
 import it.polito.ai.laboratorio2.services.exceptions.courseException.CourseNotFoundException;
 import it.polito.ai.laboratorio2.services.exceptions.studentException.StudentAlreadyInTeamException;
@@ -19,15 +16,18 @@ import it.polito.ai.laboratorio2.services.exceptions.studentException.StudentNot
 import it.polito.ai.laboratorio2.services.exceptions.teamException.TeamMinMaxException;
 import it.polito.ai.laboratorio2.services.exceptions.teamException.TeamNotFoundException;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,16 +40,26 @@ public class TeamServiceImpl implements TeamService {
     StudentRepository studentRepository;
     @Autowired
     TeamRepository teamRepository;
-
+    @Autowired
+    TeacherRepository teacherRepository;
+    @Autowired
+    UserRepository userRepository;
     @Autowired
     ModelMapper modelMapper;
-
+    @Autowired
+    NotificationService notificationService;
 
     @Override
     public Boolean addCourse(CourseDTO course) {
-        if(course.getName() == null || course.getName().equals("") || course.getMin() < 0 || course.getMax() < course.getMin())
+        if(course.getName() == null)
             return false;
-        courseRepository.save(modelMapper.map(course, Course.class));
+        if(courseRepository.findById(course.getName()).isPresent() || course.getName().equals("") || course.getMin() < 0 || course.getMax() < course.getMin())
+            return false;
+        Course newCourse = modelMapper.map(course, Course.class);
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(teacherRepository.existsById(((UserDetails)principal).getUsername()))
+            newCourse.setTeacher(teacherRepository.getOne(((UserDetails)principal).getUsername()));
+        courseRepository.save(newCourse);
         return true;
     }
 
@@ -72,9 +82,19 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Boolean addStudent(StudentDTO student) {
-        if(student.getId() == null || student.getId().equals(""))
+        if(studentRepository.existsById(student.getId()))
             return false;
+        User user = new User();
+        user.setUsername(student.getId());
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String password = StringUtils.left(UUID.randomUUID().toString(), 8);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRoles(Arrays.asList( "ROLE_STUDENT"));
+        userRepository.save(user);
         studentRepository.save(modelMapper.map(student, Student.class));
+        log.info("new student password: "+password);
+        //TODO: disabled notification here
+        //notificationService.sendMessage("s"+student.getId()+"@studenti.polito.it","new student user created", "new password: "+password);
         return true;
     }
 
@@ -96,6 +116,41 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    public Boolean addTeacher(TeacherDTO teacherDTO) {
+        if(teacherRepository.existsById(teacherDTO.getEmail()))
+            return false;
+        User user = new User();
+        user.setUsername(teacherDTO.getEmail());
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        String password = StringUtils.left(UUID.randomUUID().toString(), 8);
+        log.info("new teacher password: "+password);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRoles(Arrays.asList( "ROLE_TEACHER"));
+        userRepository.save(user);
+        teacherRepository.save(modelMapper.map(teacherDTO, Teacher.class));
+        //TODO: disabled notification here
+        //notificationService.sendMessage(teacherDTO.getEmail(),"new teacher user created", "new password: "+password);
+        return true;
+    }
+
+    @Override
+    public Optional<TeacherDTO> getTeacher(String email) {
+        return teacherRepository.findAll()
+                .stream()
+                .filter(s -> s.getEmail().equals(email))
+                .findFirst()
+                .map(t -> modelMapper.map(t, TeacherDTO.class));
+    }
+
+    @Override
+    public List<TeacherDTO> getAllTeachers() {
+        return teacherRepository.findAll()
+                .stream()
+                .map(t -> modelMapper.map(t, TeacherDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<StudentDTO> getEnrolledStudents(String courseName) throws CourseNotFoundException {
         if(!courseRepository.findById(courseName).isPresent())
             throw new CourseNotFoundException();
@@ -106,15 +161,11 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public Boolean addStudentToCourse(String studentId, String courseName) throws StudentNotFoundException, CourseNotFoundException{
-        try {
-            if(!courseRepository.findById(courseName).isPresent())
-                throw new CourseNotFoundException();
-            if(!studentRepository.findById(studentId).isPresent())
-                throw new StudentNotFoundException();
-        } catch (StudentNotFoundException | CourseNotFoundException e) {
-            return false;
-        }
+    public Boolean addStudentToCourse(String studentId, String courseName){
+        if(!courseRepository.findById(courseName).isPresent())
+            throw new CourseNotFoundException();
+        if(!studentRepository.findById(studentId).isPresent())
+            throw new StudentNotFoundException();
         if(!courseRepository.getOne(courseName).isEnabled())
             return false;
         courseRepository.getOne(courseName).addStudent(studentRepository.getOne(studentId));
@@ -137,7 +188,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public List<Boolean> addAll(List<StudentDTO> students) {
-        List<Boolean> booleans = new ArrayList<Boolean>();
+        List<Boolean> booleans = new ArrayList<>();
         for(StudentDTO studentDTO : students) {
             booleans.add(addStudent(studentDTO));
         }
@@ -160,7 +211,7 @@ public class TeamServiceImpl implements TeamService {
         /*
         .csv format required:
             id,firstName,name
-            s265542,Matteo,Stoisa
+            s265542,aaa,bbb
             [...]
          */
         CsvToBean<StudentDTO> csvToBean = new CsvToBeanBuilder(r)
@@ -210,7 +261,6 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamDTO proposeTeam(String courseId, String name, List<String> memberIds) {
-        log.info("entered function");
         if(!courseRepository.findById(courseId).isPresent())
             throw new CourseNotFoundException();
         if(!courseRepository.getOne(courseId).isEnabled())
@@ -235,7 +285,6 @@ public class TeamServiceImpl implements TeamService {
         for (String memberId : memberIds) {
             team.addMember(studentRepository.getOne(memberId));
         }
-        System.out.println(team.toString());
         teamRepository.save(team);
         return modelMapper.map(team, TeamDTO.class);
     }
@@ -268,5 +317,19 @@ public class TeamServiceImpl implements TeamService {
                 .stream()
                 .map(s -> modelMapper.map(s, StudentDTO.class))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void setTeamStatus(Long teamId, int status) {
+        if(teamRepository.findById(teamId).isPresent()) {
+            teamRepository.getOne(teamId).setStatus(status);
+        }
+    }
+
+    @Override
+    public void evictTeam(Long teamId) {
+        if(teamRepository.findById(teamId).isPresent()) {
+            teamRepository.delete(teamRepository.getOne(teamId));
+        }
     }
 }

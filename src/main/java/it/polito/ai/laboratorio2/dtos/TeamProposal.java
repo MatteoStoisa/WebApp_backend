@@ -1,19 +1,18 @@
 package it.polito.ai.laboratorio2.dtos;
 
 import lombok.Data;
-import org.springframework.hateoas.RepresentationModel;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @Data
-public class CourseDTO extends RepresentationModel<CourseDTO> {
-    @NotEmpty
+public class TeamProposal {
     @NotBlank
     @NotNull
-    private String name;
-    private int min;
-    private int max;
-    private boolean enabled;
+    @NotEmpty
+    String teamName;
+    @NotNull
+    List<String> memberIds;
 }
