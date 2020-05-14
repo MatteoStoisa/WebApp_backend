@@ -33,12 +33,11 @@ public class StudentController {
 
     @GetMapping("/{id}")
     public StudentDTO getOne(@PathVariable("id") String id) {
-        Optional<StudentDTO> studentDTO = teamService.getStudent(id);
-        if(studentDTO.isPresent()) {
-            return ModelHelper.enrich(studentDTO.get());
+        try {
+            return ModelHelper.enrich(teamService.getStudent(id).get());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, id);
     }
 
     @PostMapping({"", "/"})
@@ -46,22 +45,30 @@ public class StudentController {
         if(teamService.addStudent(studentDTO))
             return ModelHelper.enrich(studentDTO);
         else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, studentDTO.getId());
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
     }
 
     @GetMapping("/{id}/getCourses")
     public List<CourseDTO> getCourses(@PathVariable("id") String id) {
-        return teamService.getCourses(id)
-                .stream()
-                .map(ModelHelper::enrich)
-                .collect(Collectors.toList());
+        try {
+            return teamService.getCourses(id)
+                    .stream()
+                    .map(ModelHelper::enrich)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/{id}/getTeams")
     public List<TeamDTO> getTeams(@PathVariable("id") String id) {
-        return teamService.getTeamsForStudent(id)
-                .stream()
-                .map(ModelHelper::enrich)
-                .collect(Collectors.toList());
+        try {
+                return teamService.getTeamsForStudent(id)
+                    .stream()
+                    .map(ModelHelper::enrich)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 }

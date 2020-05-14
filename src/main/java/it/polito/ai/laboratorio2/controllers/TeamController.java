@@ -32,7 +32,7 @@ public class TeamController {
                     .map(ModelHelper::enrich)
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, teamId);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
     }
 }

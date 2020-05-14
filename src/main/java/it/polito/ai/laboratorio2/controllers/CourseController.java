@@ -40,20 +40,23 @@ public class CourseController {
 
     @GetMapping("/{name}")
     public CourseDTO getOne(@PathVariable("name") String name) {
-        Optional<CourseDTO> courseDTO = teamService.getCourse(name);
-        if(courseDTO.isPresent()) {
-            return ModelHelper.enrich(courseDTO.get());
+        try {
+            return ModelHelper.enrich(teamService.getCourse(name).get());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "course "+name+" not found");
     }
 
     @GetMapping("/{name}/enrolled")
     public List<StudentDTO> enrolledStudents(@PathVariable("name") String name) {
-        return teamService.getEnrolledStudents(name)
-                .stream()
-                .map(ModelHelper::enrich)
-                .collect(Collectors.toList());
+        try {
+            return teamService.getEnrolledStudents(name)
+                    .stream()
+                    .map(ModelHelper::enrich)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @PostMapping({"", "/"})
@@ -61,23 +64,25 @@ public class CourseController {
         if(teamService.addCourse(courseDTO))
             return ModelHelper.enrich(courseDTO);
         else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "invalid course");
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
     }
 
     @PostMapping("/{name}/enrollOne")
     public CourseDTO enrollOne(@RequestBody Map<String, String> requestBody,
                                @PathVariable("name") String courseName) {
-        if(teamService.addStudentToCourse(requestBody.get("studentId"), courseName))
+        try {
+            teamService.addStudentToCourse(requestBody.get("studentId"), courseName);//)
             return ModelHelper.enrich(teamService.getCourse(courseName).get());
-        else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "invalid parameters");
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @PostMapping("/{name}/enrollMany")
     public List<Boolean> enrollStudents(@PathVariable("name") String courseName,
                                         @RequestParam("file") MultipartFile file){
         if(file == null)
-            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "file error");
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
         if(Objects.equals(file.getContentType(), "text/csv")) {
             List<Boolean> booleanList = new ArrayList<>();
             try {
@@ -85,12 +90,11 @@ public class CourseController {
                 booleanList = teamService.addAndEnroll(reader, courseName);
                 return booleanList;
             } catch (IOException c) {
-                throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, file.getName()+" file error");
+                throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
             }
         }
         else
-            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, file.getName()+" wrong file extension");
-        //TODO: improve exception management
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
 
     @PostMapping("/{name}/proposeTeam")
@@ -101,7 +105,7 @@ public class CourseController {
             notificationService.notifyTeam(teamDTO, teamProposal.getMemberIds());
             return ModelHelper.enrich(teamDTO);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "invalid team proposal");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -117,25 +121,37 @@ public class CourseController {
 
     @GetMapping("/{name}/getTeams")
     public List<TeamDTO> getTeams(@PathVariable("name") String courseName) {
-        return teamService.getTeamForCourse(courseName)
-                .stream()
-                .map(ModelHelper::enrich)
-                .collect(Collectors.toList());
+        try {
+            return teamService.getTeamForCourse(courseName)
+                    .stream()
+                    .map(ModelHelper::enrich)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/{name}/getStudentsInTeams")
     public List<StudentDTO> getStudentsInTeams(@PathVariable("name") String courseName) {
+        try {
         return teamService.getStudentsInTeams(courseName)
                 .stream()
                 .map(ModelHelper::enrich)
                 .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/{name}/getAvailableStudents")
     public List<StudentDTO> getAvailableStudents(@PathVariable("name") String courseName) {
+        try {
         return teamService.getAvailableStudents(courseName)
                 .stream()
                 .map(ModelHelper::enrich)
                 .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
     }
 }

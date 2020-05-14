@@ -59,8 +59,6 @@ public interface TeamService {
     List<StudentDTO> getStudentsInTeams(String courseName);
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_TEACHER') or hasRole('ROLE_STUDENT')")
     List<StudentDTO> getAvailableStudents(String courseName);
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_TEACHER') or hasRole('ROLE_STUDENT')")
     void setTeamStatus(Long teamId, int status);
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_TEACHER') or hasRole('ROLE_STUDENT')")
     void evictTeam(Long teamId);
 }

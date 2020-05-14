@@ -48,14 +48,17 @@ public class NotificationServiceImpl implements NotificationService {
         if(!tokenRepository.findById(token).isPresent())
             throw new TokenUnknownException();
         if(tokenRepository.getOne(token).getExpiryDate().after(new Timestamp(new Date().getTime()))) {
+            log.info("000");
             Long teamId = tokenRepository.getOne(token).getTeamId();
             tokenRepository.delete(tokenRepository.getOne(token));
             if(tokenRepository.findAllByTeamId(teamId).size() == 0) {
                 teamService.setTeamStatus(teamId, 1);
             }
+            log.info("aaa");
             return true;
         }
         else {
+            log.info("bbb");
             reject(token);
             return false;
         }
@@ -87,8 +90,8 @@ public class NotificationServiceImpl implements NotificationService {
                     WebMvcLinkBuilder.linkTo(NotificationController.class).slash("/confirm/"+token.getId()) + " \n" +
                     "or REJECT it: \n" +
                     WebMvcLinkBuilder.linkTo(NotificationController.class).slash("/reject/"+token.getId());
-            //TODO: test mail hardcoded here
-            sendMessage(/*address*/ "derrick1rose95@gmail.com", "Confirm Team Invitation", body);
+            //TODO: disabled notification here
+            //sendMessage(address, "Confirm Team Invitation", body);
         }
     }
 }

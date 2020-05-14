@@ -29,12 +29,11 @@ public class TeacherController {
 
     @GetMapping("/{email}")
     public TeacherDTO getOne(@PathVariable("email") String email) {
-        Optional<TeacherDTO> teacherDTO = teamService.getTeacher(email);
-        if(teacherDTO.isPresent()) {
-            return ModelHelper.enrich(teacherDTO.get());
+        try {
+            return ModelHelper.enrich(teamService.getTeacher(email).get());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, email);
     }
 
     @PostMapping({"", "/"})
@@ -42,6 +41,6 @@ public class TeacherController {
         if(teamService.addTeacher(teacherDTO))
             return ModelHelper.enrich(teacherDTO);
         else
-            throw new ResponseStatusException(HttpStatus.CONFLICT, teacherDTO.getEmail());
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
     }
 }

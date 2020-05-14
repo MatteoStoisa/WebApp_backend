@@ -56,7 +56,6 @@ public class Laboratorio2Application {
     DEFINED USERS:
     -   123456              studentPassword1    STUDENT_ROLE
     -   234567              studentPassword2    STUDENT_ROLE
-    -   34567               studentPassword3    STUDENT_ROLE
     -   teacher1@mail.it    teacherPassword1    TEACHER_ROLE
     -   adminUsername       adminPassword       ADMIN_ROLE
      */
@@ -75,13 +74,13 @@ public class Laboratorio2Application {
         public void run(String... args) throws Exception {
             //STUDENT1
             Student student1 = new Student();
-            student1.setId("34567");
-            student1.setName("studentName3");
-            student1.setFirstName("studentFirstName3");
+            student1.setId("123456");
+            student1.setName("studentName1");
+            student1.setFirstName("studentFirstName1");
             this.studentRepository.save(student1);
             this.users.save(User.builder()
                     .username(student1.getId())
-                    .password(this.passwordEncoder.encode("studentPassword3"))
+                    .password(this.passwordEncoder.encode("studentPassword1"))
                     .roles(Arrays.asList( "ROLE_STUDENT"))
                     .build()
             );

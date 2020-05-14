@@ -1,8 +1,11 @@
-package it.polito.ai.laboratorio2.security;
+package it.polito.ai.laboratorio2.controllers;
 
 import it.polito.ai.laboratorio2.repositories.UserRepository;
+import it.polito.ai.laboratorio2.security.AuthenticationRequest;
+import it.polito.ai.laboratorio2.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -44,7 +47,8 @@ public class AuthenticationController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity currentUser(@AuthenticationPrincipal UserDetails userDetails){
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_TEACHER') or hasRole('ROLE_STUDENT')")
+    public ResponseEntity currentUser(@AuthenticationPrincipal UserDetails userDetails) {
         Map<Object, Object> model = new HashMap<>();
         model.put("username", userDetails.getUsername());
         model.put("roles", userDetails.getAuthorities()
@@ -55,5 +59,5 @@ public class AuthenticationController {
         return ok(model);
     }
 
-    //TODO: have to implement registration instead of admin roles
+    //TODO: implement registration instead of admin roles
 }

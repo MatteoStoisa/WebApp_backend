@@ -2,13 +2,17 @@ package it.polito.ai.laboratorio2.security;
 
 import io.jsonwebtoken.*;
 import it.polito.ai.laboratorio2.security.exceptions.jwtException.JwtAuthenticationException;
+import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -17,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 
 @Component
+@Log(topic = "JwtTokenProvider")
 public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
@@ -54,12 +59,13 @@ public class JwtTokenProvider {
         }
         return null;
     }
-    public boolean validateToken(String token) {
+    public boolean validateToken(String token){
         try {
             Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
             return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            throw new JwtAuthenticationException("");
+            //throw new JwtAuthenticationException("");
+            return false;
         }
     }
 }
